@@ -57,7 +57,43 @@ export class SpotifyService {
             }));
         } catch (error) {
             this.logger.error('Track search failed', error);
-            throw new Error('Failed to search tracks');
+            
+            // Extract more detailed error information
+            if (error.response) {
+                // Axios error with response
+                const status = error.response.status;
+                const statusText = error.response.statusText;
+                const data = error.response.data;
+                
+                this.logger.error(
+                    `Spotify API error: ${status} ${statusText}`,
+                    JSON.stringify(data, null, 2),
+                );
+                
+                if (status === 400) {
+                    throw new BadRequestException(
+                        data?.error?.message || 'Invalid search query',
+                    );
+                } else if (status === 401) {
+                    throw new BadRequestException('Spotify authentication failed. Please check your credentials.');
+                } else if (status === 403) {
+                    throw new BadRequestException('Spotify API access forbidden. Check your app permissions.');
+                } else if (status === 429) {
+                    throw new BadRequestException('Rate limit exceeded. Please try again later.');
+                } else {
+                    throw new Error(
+                        `Spotify API error: ${status} ${statusText} - ${data?.error?.message || 'Unknown error'}`,
+                    );
+                }
+            } else if (error.request) {
+                // Request made but no response received
+                this.logger.error('No response from Spotify API', error.request);
+                throw new Error('No response from Spotify API. Please check your network connection.');
+            } else {
+                // Error setting up the request
+                this.logger.error('Error setting up search request', error.message);
+                throw new Error(`Failed to search tracks: ${error.message}`);
+            }
         }
     }
 
@@ -122,7 +158,43 @@ export class SpotifyService {
             };
         } catch (error) {
             this.logger.error('Recommendation fetch failed', error);
-            throw new Error('Failed to get recommendations');
+            
+            // Extract more detailed error information
+            if (error.response) {
+                // Axios error with response
+                const status = error.response.status;
+                const statusText = error.response.statusText;
+                const data = error.response.data;
+                
+                this.logger.error(
+                    `Spotify API error: ${status} ${statusText}`,
+                    JSON.stringify(data, null, 2),
+                );
+                
+                if (status === 400) {
+                    throw new BadRequestException(
+                        data?.error?.message || 'Invalid recommendation request parameters',
+                    );
+                } else if (status === 401) {
+                    throw new BadRequestException('Spotify authentication failed. Please check your credentials.');
+                } else if (status === 403) {
+                    throw new BadRequestException('Spotify API access forbidden. Check your app permissions.');
+                } else if (status === 429) {
+                    throw new BadRequestException('Rate limit exceeded. Please try again later.');
+                } else {
+                    throw new Error(
+                        `Spotify API error: ${status} ${statusText} - ${data?.error?.message || 'Unknown error'}`,
+                    );
+                }
+            } else if (error.request) {
+                // Request made but no response received
+                this.logger.error('No response from Spotify API', error.request);
+                throw new Error('No response from Spotify API. Please check your network connection.');
+            } else {
+                // Error setting up the request
+                this.logger.error('Error setting up recommendation request', error.message);
+                throw new Error(`Failed to get recommendations: ${error.message}`);
+            }
         }
     }
 }

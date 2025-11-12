@@ -55,7 +55,9 @@ export class SpotifyAuthService {
         timestamp: Date.now(),
       };
 
-      this.logger.debug('Spotify access token obtained');
+      this.logger.log('Spotify access token obtained');
+      this.logger.log(`Bearer Token: ${this.spotifyToken.access_token}`);
+      this.logger.log(`Token expires in: ${this.spotifyToken.expires_in} seconds`);
       return this.spotifyToken.access_token;
     } catch (error) {
       this.logger.error('Failed to obtain Spotify access token', error);

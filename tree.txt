@@ -1,0 +1,30 @@
+spotify-recommendation-app
+├───.env.sample
+├───.gitignore
+├───.prettierrc
+├───eslint.config.mjs
+├───nest-cli.json
+├───package-lock.json
+├───package.json
+├───README.md
+├───tsconfig.build.json
+├───tsconfig.json
+├───src/
+│   ├───app.controller.spec.ts
+│   ├───app.controller.ts
+│   ├───app.module.ts
+│   ├───app.service.ts
+│   ├───main.ts
+│   └───spotify/
+│       ├───spotify.controller.ts
+│       ├───spotify.module.ts
+│       ├───spotify.service.ts
+│       ├───auth/
+│       │   ├───spotify-auth.module.ts
+│       │   └───spotify.auth.service.ts
+│       └───dtos/
+│           ├───recommendation.dto.ts
+│           └───track.dto.ts
+└───test/
+    ├───app.e2e-spec.ts
+    └───jest-e2e.json

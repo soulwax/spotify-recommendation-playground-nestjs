@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma, PrismaClientKnownRequestError } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface ApiLogPayload {
@@ -42,12 +42,20 @@ export class LoggingService {
         },
       });
     } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
         this.logger.error(`Failed to persist API log (code: ${error.code})`, error.stack);
         return;
       }
 
-      this.logger.error('Failed to persist API log', error instanceof Error ? error.stack : String(error));
+      if (error instanceof Prisma.PrismaClientInitializationError) {
+        this.logger.error('Prisma initialization error while logging API call', error.stack);
+        return;
+      }
+
+      this.logger.error(
+        'Failed to persist API log',
+        error instanceof Error ? error.stack : String(error),
+      );
     }
   }
 

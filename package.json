@@ -1,8 +1,8 @@
 {
   "name": "songbird-api",
   "version": "0.2.1",
-  "description": "",
-  "author": "",
+  "description": "Songbird API",
+  "author": "soulwax@github.com",
   "private": true,
   "license": "GPL-3.0-only",
   "scripts": {
@@ -17,7 +17,24 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "pm2:start": "pm2 start dist/main.js --name songbird-api",
+    "pm2:start:dev": "pm2 start src/main.ts --name songbird-api --watch --interpreter ts-node/register",
+    "pm2:restart": "pm2 restart songbird-api",
+    "pm2:reload": "pm2 reload songbird-api",
+    "pm2:stop": "pm2 stop songbird-api",
+    "pm2:delete": "pm2 delete songbird-api",
+    "pm2:list": "pm2 ls",
+    "pm2:logs": "pm2 logs songbird-api",
+    "pm2:monit": "pm2 monit",
+    "pm2:startup": "pm2 startup",
+    "pm2:save": "pm2 save",
+    "pm2:reset": "pm2 reset songbird-api",
+    "pm2:info": "pm2 describe songbird-api",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
@@ -32,7 +49,8 @@
     "joi": "^18.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "@prisma/client": "^6.2.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -57,7 +75,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.20.0",
+    "prisma": "^6.2.1"
   },
   "jest": {
     "moduleFileExtensions": [

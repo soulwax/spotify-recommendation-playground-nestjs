@@ -257,10 +257,11 @@ export class LastfmService {
                 const tracks = searchResults?.trackmatches?.track;
                 if (tracks && (Array.isArray(tracks) ? tracks.length > 0 : true)) {
                     const foundTrack = Array.isArray(tracks) ? tracks[0] : tracks;
-
                     foundSongs++;
 
-                    // Get similar tracks for the found track
+                    let foundSimilarTracks = false;
+
+                    // Strategy 1: Try to get similar tracks for the found track
                     try {
                         const similarTracks = await this.getSimilarTracks(
                             foundTrack.artist,
@@ -269,23 +270,32 @@ export class LastfmService {
                         );
 
                         if (similarTracks?.track) {
-                            const tracks = Array.isArray(similarTracks.track)
+                            const similarTracksArray = Array.isArray(similarTracks.track)
                                 ? similarTracks.track
                                 : [similarTracks.track];
 
-                            // Add similar tracks to the collection (deduplicate by name+artist)
-                            tracks.forEach((track: any, index: number) => {
-                                const key = `${track.artist?.toLowerCase() || ''}_${track.name?.toLowerCase() || ''}`;
-                                if (!allSimilarTracks.has(key)) {
-                                    allSimilarTracks.set(key, {
-                                        name: track.name || '',
-                                        artist: track.artist || '',
-                                        url: track.url || '',
-                                        match: track.match ? parseFloat(track.match) : 100 - index,
-                                        mbid: track.mbid,
-                                    });
-                                }
-                            });
+                            this.logger.debug(`Found ${similarTracksArray.length} similar tracks for ${foundTrack.artist} - ${foundTrack.name}`);
+
+                            if (similarTracksArray.length > 0) {
+                                foundSimilarTracks = true;
+                                // Add similar tracks to the collection (deduplicate by name+artist)
+                                similarTracksArray.forEach((track: any, index: number) => {
+                                    const key = `${track.artist?.toLowerCase() || ''}_${track.name?.toLowerCase() || ''}`;
+                                    if (!allSimilarTracks.has(key)) {
+                                        allSimilarTracks.set(key, {
+                                            name: track.name || '',
+                                            artist: track.artist || '',
+                                            url: track.url || '',
+                                            match: track.match ? parseFloat(track.match) : 100 - index,
+                                            mbid: track.mbid,
+                                        });
+                                    }
+                                });
+                            } else {
+                                this.logger.debug(`Similar tracks array is empty for ${foundTrack.artist} - ${foundTrack.name}`);
+                            }
+                        } else {
+                            this.logger.debug(`No similar tracks found in response for ${foundTrack.artist} - ${foundTrack.name}`);
                         }
                     } catch (error) {
                         this.logger.warn(
@@ -293,17 +303,157 @@ export class LastfmService {
                             error,
                         );
                     }
+
+                    // Strategy 2: If no similar tracks found, try artist's top tracks
+                    if (!foundSimilarTracks && foundTrack.artist) {
+                        try {
+                            this.logger.debug(`Fallback: Getting top tracks for artist: ${foundTrack.artist}`);
+                            const topTracks = await this.getArtistTopTracks(
+                                foundTrack.artist,
+                                diversitySettings.similarTracksLimit,
+                                1,
+                            );
+
+                            if (topTracks?.track) {
+                                const topTracksArray = Array.isArray(topTracks.track)
+                                    ? topTracks.track
+                                    : [topTracks.track];
+
+                                // Filter out the original track and add others
+                                topTracksArray.forEach((track: any, index: number) => {
+                                    // Skip if it's the same track we searched for
+                                    if (
+                                        track.name?.toLowerCase() === foundTrack.name?.toLowerCase() &&
+                                        track.artist?.name?.toLowerCase() === foundTrack.artist?.toLowerCase()
+                                    ) {
+                                        return;
+                                    }
+
+                                    const key = `${track.artist?.name?.toLowerCase() || ''}_${track.name?.toLowerCase() || ''}`;
+                                    if (!allSimilarTracks.has(key)) {
+                                        allSimilarTracks.set(key, {
+                                            name: track.name || '',
+                                            artist: track.artist?.name || track.artist || '',
+                                            url: track.url || '',
+                                            match: 0.5 - index * 0.01, // Lower match score for fallback
+                                            mbid: track.mbid,
+                                        });
+                                    }
+                                });
+                            }
+                        } catch (error) {
+                            this.logger.warn(
+                                `Failed to get top tracks for artist: ${foundTrack.artist}`,
+                                error,
+                            );
+                        }
+                    }
+
+                    // Strategy 3: If still nothing, use search results directly (excluding the original)
+                    if (allSimilarTracks.size === 0 || (!foundSimilarTracks && allSimilarTracks.size < 3)) {
+                        try {
+                            const searchTracksArray = Array.isArray(tracks) ? tracks : [tracks];
+                            this.logger.debug(`Fallback: Using search results directly`);
+                            
+                            searchTracksArray.slice(1, diversitySettings.similarTracksLimit + 1).forEach((track: any, index: number) => {
+                                // Skip the first one (it's the original)
+                                const key = `${track.artist?.toLowerCase() || ''}_${track.name?.toLowerCase() || ''}`;
+                                if (!allSimilarTracks.has(key)) {
+                                    allSimilarTracks.set(key, {
+                                        name: track.name || '',
+                                        artist: track.artist || '',
+                                        url: track.url || '',
+                                        match: 0.4 - index * 0.01, // Even lower match score
+                                        mbid: track.mbid,
+                                    });
+                                }
+                            });
+                        } catch (error) {
+                            this.logger.warn('Failed to use search results as fallback', error);
+                        }
+                    }
                 } else {
                     this.logger.warn(`No results found for: ${searchQuery}`);
+                    
+                    // Strategy 4: If search fails, try searching by artist only to get their top tracks
+                    if (song.artist) {
+                        try {
+                            this.logger.debug(`Fallback: Searching by artist only: ${song.artist}`);
+                            const artistTopTracks = await this.getArtistTopTracks(
+                                song.artist,
+                                diversitySettings.similarTracksLimit,
+                                1,
+                            );
+
+                            if (artistTopTracks?.track) {
+                                const topTracksArray = Array.isArray(artistTopTracks.track)
+                                    ? artistTopTracks.track
+                                    : [artistTopTracks.track];
+
+                                topTracksArray.forEach((track: any, index: number) => {
+                                    const key = `${track.artist?.name?.toLowerCase() || ''}_${track.name?.toLowerCase() || ''}`;
+                                    if (!allSimilarTracks.has(key)) {
+                                        allSimilarTracks.set(key, {
+                                            name: track.name || '',
+                                            artist: track.artist?.name || track.artist || '',
+                                            url: track.url || '',
+                                            match: 0.3 - index * 0.01,
+                                            mbid: track.mbid,
+                                        });
+                                    }
+                                });
+                            }
+                        } catch (error) {
+                            this.logger.warn(`Failed to get artist top tracks for: ${song.artist}`, error);
+                        }
+                    }
                 }
             } catch (error) {
                 this.logger.warn(`Failed to search for song: ${JSON.stringify(song)}`, error);
             }
         }
 
+        // If we still have no tracks, try a more aggressive fallback
+        if (allSimilarTracks.size === 0) {
+            this.logger.warn('No tracks found with primary strategies, trying aggressive fallback');
+            
+            // Try to get recommendations from popular artists/tracks as last resort
+            for (const song of request.songs) {
+                if (song.artist) {
+                    try {
+                        // Search for the artist and get their top tracks
+                        const artistInfo = await this.getArtistInfo(song.artist);
+                        if (artistInfo) {
+                            const topTracks = await this.getArtistTopTracks(song.artist, 10, 1);
+                            if (topTracks?.track) {
+                                const topTracksArray = Array.isArray(topTracks.track)
+                                    ? topTracks.track
+                                    : [topTracks.track];
+                                
+                                topTracksArray.slice(0, 5).forEach((track: any, index: number) => {
+                                    const key = `${track.artist?.name?.toLowerCase() || ''}_${track.name?.toLowerCase() || ''}`;
+                                    if (!allSimilarTracks.has(key)) {
+                                        allSimilarTracks.set(key, {
+                                            name: track.name || '',
+                                            artist: track.artist?.name || track.artist || '',
+                                            url: track.url || '',
+                                            match: 0.2 - index * 0.01,
+                                            mbid: track.mbid,
+                                        });
+                                    }
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        this.logger.warn(`Aggressive fallback failed for artist: ${song.artist}`, error);
+                    }
+                }
+            }
+        }
+
         if (allSimilarTracks.size === 0) {
             throw new BadRequestException(
-                'Could not find any similar tracks. Please check your song information.',
+                'Could not find any tracks. Please check your song information and try different songs or artists.',
             );
         }
 

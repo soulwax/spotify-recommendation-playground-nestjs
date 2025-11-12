@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { DeezerModule } from './deezer/deezer.module';
 import { LastfmModule } from './lastfm/lastfm.module';
 import { SpotifyModule } from './spotify/spotify.module';
 
@@ -28,6 +29,7 @@ import { SpotifyModule } from './spotify/spotify.module';
     HttpModule,
     SpotifyModule,
     LastfmModule,
+    DeezerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

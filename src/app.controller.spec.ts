@@ -17,8 +17,11 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should render the landing page markup', () => {
+      const html = appController.getLandingPage();
+      expect(html).toContain('<!DOCTYPE html>');
+      expect(html).toContain('Songbird API');
+      expect(html).toContain('/openapi.yaml');
     });
   });
 });

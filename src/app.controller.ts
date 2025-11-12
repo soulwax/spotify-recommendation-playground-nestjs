@@ -1,18 +1,23 @@
 // File: src/app.controller.ts
 
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Header } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AppService } from './app.service';
 
-@ApiTags('Health')
+@ApiTags('Root')
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Health check endpoint' })
-  @ApiResponse({ status: 200, description: 'Returns a simple greeting message', type: String })
-  getHello(): string {
-    return this.appService.getHello();
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  @ApiOperation({ summary: 'Landing page' })
+  @ApiResponse({
+    status: 200,
+    description: 'Renders a short overview page and links to documentation',
+    type: String,
+  })
+  getLandingPage(): string {
+    return this.appService.getLandingPage();
   }
 }

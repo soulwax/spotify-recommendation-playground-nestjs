@@ -11,9 +11,9 @@ export class AppService {
     const hostUrl = this.configService.get<string>('HOST_URL') ?? 'https://songbird.starchildmusic.com';
     const environment = this.configService.get<string>('NODE_ENV') ?? 'development';
     const port = this.configService.get<number>('PORT') ?? 3000;
-    const year = new Date().getFullYear();
+    const year = new Date().getFullYear().toString();
 
-    return `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -436,8 +436,8 @@ export class AppService {
           }
         }
         if (Array.isArray(operation.parameters) && operation.parameters.length > 0) {
-          return operation.parameters.reduce<Record<string, unknown>>((accumulator, parameter) => {
-            accumulator[parameter.name] = parameter.example ?? `<${parameter.in}>`;
+          return operation.parameters.reduce((accumulator, parameter) => {
+            accumulator[parameter.name] = parameter.example ?? '<' + parameter.in + '>';
             return accumulator;
           }, {});
         }
@@ -475,7 +475,7 @@ export class AppService {
           const tagOptions = ['<option value="">All areas</option>'].concat(
             Array.from(tagsSet)
               .sort((a, b) => a.localeCompare(b))
-              .map((tag) => \`<option value="\${tag}">\${tag}</option>\`),
+              .map((tag) => '<option value="' + tag + '">' + tag + '</option>'),
           );
           tagFilter.innerHTML = tagOptions.join('');
 
@@ -501,5 +501,7 @@ export class AppService {
     </script>
   </body>
 </html>`;
+
+    return html;
   }
 }

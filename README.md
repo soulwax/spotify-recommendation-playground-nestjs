@@ -1,4 +1,6 @@
-# Songbird Player API Server
+<div align="center"><h1 style="font-size: 2.5em; margin-bottom: 0.5em;"><b>Songbird Player API Server</b></h1></div>
+
+<div align="center"><img src=".github/resources/songbird.png" alt="Songbird Player" width="600" height="600" /></div>
 
 ## Overview
 
